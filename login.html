@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>تسجيل الدخول - المكتبة الإلكترونية</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Cairo -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<!-- Google Identity Services Library -->
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+
+    <style>
+        /* ==========================================
+           THEME VARIABLES & BASE
+           ========================================== */
+        :root {
+            --primary-brown: #4A281C;
+            --light-brown: #6B4030;
+            --gold: #D9B98C;
+            --glass-bg: rgba(255, 255, 255, 0.12);
+            --glass-border: rgba(255, 255, 255, 0.45);
+            --text-white: #ffffff;
+            --text-muted: rgba(255, 255, 255, 0.75);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-image: url('https://images.unsplash.com/photo-1507842217343-583bb7270b66?q=80&w=2000&auto=format&fit=crop');
+            background-position: center;
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow-x: hidden;
+            color: var(--text-white);
+            direction: rtl;
+        }
+
+        /* Dark Overlay for Background */
+        .bg-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.55);
+            z-index: -1;
+            backdrop-filter: blur(6px);
+        }
+
+        /* ==========================================
+           AUTH CARD (GLASSMORPHISM)
+           ========================================== */
+        .auth-container {
+            width: 100%;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .auth-card {
+            width: 100%;
+            max-width: 440px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(22px);
+            -webkit-backdrop-filter: blur(22px);
+            border: 1px solid var(--glass-border);
+            border-radius: 32px;
+            padding: 35px 30px;
+            box-shadow: 0 25px 70px rgba(0, 0, 0, 0.30), inset 0 0 20px rgba(255, 255, 255, 0.05);
+            position: relative;
+            z-index: 1;
+            /* لضمان عدم تحرك الصندوق وثباته */
+            display: flex;
+            flex-direction: column;
+            max-height: 95vh;
+            overflow-y: auto;
+            scrollbar-width: none; /* Firefox */
+        }
+        .auth-card::-webkit-scrollbar {
+            display: none; /* Chrome/Safari */
+        }
+
+        /* ==========================================
+           BRANDING & HEADER
+           ========================================== */
+        .brand-icon {
+            width: 85px;
+            height: 85px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0 auto 15px auto;
+            box-shadow: 0 0 30px rgba(217, 185, 140, 0.15);
+        }
+
+        .brand-icon i {
+            font-size: 38px;
+            background: linear-gradient(135deg, #fff, var(--gold));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 15px rgba(217, 185, 140, 0.5);
+        }
+
+        .tagline {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            color: var(--text-white);
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .tagline i {
+            color: var(--gold);
+            font-size: 12px;
+        }
+
+        .divider-dot {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin: 12px 0 20px 0;
+        }
+
+        .divider-dot .line {
+            height: 1px;
+            background: rgba(255, 255, 255, 0.3);
+            flex: 1;
+        }
+
+        .divider-dot span {
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.6);
+        }
+
+        .auth-title {
+            font-size: 26px;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 5px;
+        }
+
+        .auth-desc {
+            font-size: 13px;
+            color: var(--text-muted);
+            text-align: center;
+            line-height: 1.6;
+            margin-bottom: 25px;
+        }
+
+        /* ==========================================
+           FORM INPUTS
+           ========================================== */
+        .form-group {
+            margin-bottom: 16px;
+            position: relative;
+        }
+
+        .form-input {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.10);
+            border: 1px solid rgba(255, 255, 255, 0.45);
+            border-radius: 18px;
+            padding: 14px 45px 14px 45px;
+            color: #fff;
+            font-family: 'Cairo', sans-serif;
+            font-size: 14px;
+            transition: var(--transition);
+            outline: none;
+        }
+
+        .form-input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .form-input:focus {
+            border-color: rgba(255, 255, 255, 0.8);
+            background: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 0 15px rgba(217, 185, 140, 0.2);
+        }
+
+        .input-icon-right {
+            position: absolute;
+            right: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 16px;
+            pointer-events: none;
+        }
+
+        .input-icon-left {
+            position: absolute;
+            left: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 16px;
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: 0;
+        }
+
+        .input-icon-left:hover {
+            color: #fff;
+        }
+
+        /* ==========================================
+           BUTTONS
+           ========================================== */
+        .btn-primary {
+            width: 100%;
+            background: linear-gradient(135deg, var(--primary-brown) 0%, var(--light-brown) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 18px;
+            padding: 14px;
+            color: #fff;
+            font-family: 'Cairo', sans-serif;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+            background: linear-gradient(135deg, #5A3224 0%, #7B4A38 100%);
+        }
+
+        .btn-primary:active {
+            transform: translateY(1px);
+        }
+
+        /* Social Buttons */
+        .social-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .btn-social {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.10);
+            border: 1px solid rgba(255, 255, 255, 0.45);
+            border-radius: 18px;
+            padding: 12px 10px;
+            color: #fff;
+            font-family: 'Cairo', sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            backdrop-filter: blur(10px);
+        }
+
+        .btn-social:hover {
+            background: rgba(255, 255, 255, 0.20);
+            border-color: rgba(255, 255, 255, 0.7);
+            transform: translateY(-2px);
+        }
+
+        .btn-social i {
+            font-size: 18px;
+        }
+
+        .btn-social.google i {
+            color: #EA4335;
+            background: #fff;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+
+        .btn-social.facebook i {
+            color: #1877F2;
+        }
+
+        /* ==========================================
+           TOAST NOTIFICATIONS
+           ========================================== */
+        #toast-container {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 90%;
+            max-width: 400px;
+            pointer-events: none;
+        }
+
+        .toast {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 14px;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #fff;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            pointer-events: auto;
+            transform: translateY(-100%);
+            opacity: 0;
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.4s ease;
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .toast.hide {
+            transform: translateY(-100%);
+            opacity: 0;
+        }
+
+        .toast-icon { font-size: 18px; color: var(--gold); }
+        .toast-message { flex: 1; }
+        .toast-close {
+            background: none; border: none; color: rgba(255, 255, 255, 0.6);
+            cursor: pointer; font-size: 16px; padding: 4px;
+        }
+
+        /* ==========================================
+           UTILITIES & RESPONSIVE
+           ========================================== */
+        .text-gold { color: var(--gold); }
+        .text-muted { color: var(--text-muted); }
+        
+        .link-btn {
+            background: none; border: none; cursor: pointer; font-family: 'Cairo', sans-serif;
+            font-size: 13px; color: var(--gold); font-weight: 600; padding: 0;
+        }
+        .link-btn:hover { text-decoration: underline; color: #fff; }
+
+        .checkbox-container {
+            display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-muted);
+        }
+        .checkbox-container input {
+            accent-color: var(--gold); width: 16px; height: 16px; cursor: pointer;
+        }
+
+        @media (max-width: 480px) {
+            .auth-card { padding: 25px 20px; border-radius: 24px; }
+            .brand-icon { width: 70px; height: 70px; }
+            .brand-icon i { font-size: 30px; }
+            .auth-title { font-size: 22px; }
+            .form-input { padding: 12px 40px 12px 40px; font-size: 13px; }
+            .input-icon-right, .input-icon-left { font-size: 14px; }
+            .btn-social { font-size: 13px; padding: 10px 8px; }
+        }
+        
+        .social-divider {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 13px;
+    margin: 20px 0;
+}
+
+.social-divider .line {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.25);
+    flex: 1;
+} 
+
+.checkbox-container input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    border-radius: 4px;
+    background: transparent;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.checkbox-container input[type="checkbox"]:checked {
+    background: var(--gold); /* اللون الذهبي */
+    border-color: var(--gold);
+}
+
+.checkbox-container input[type="checkbox"]:checked::after {
+    content: '\f00c';
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    font-size: 10px;
+    color: #4A281C; /* علامة الصح باللون البني الغامق */
+    position: absolute;
+} 
+    </style>
+</head>
+<body>
+
+    <!-- Dark Overlay -->
+    <div class="bg-overlay"></div>
+
+    <!-- Toast Notifications -->
+    <div id="toast-container"></div>
+
+    <!-- Main Container -->
+    <div class="auth-container">
+        <div class="auth-card">
+            
+            <!-- Branding -->
+            <div class="brand-icon">
+                <i class="fa-solid fa-book-open"></i>
+            </div>
+
+            <div class="tagline">
+                <i class="fa-solid fa-leaf"></i>
+                <span>عالم من الكتب.. ينتظرك</span>
+                <i class="fa-solid fa-leaf"></i>
+            </div>
+
+            <div class="divider-dot">
+                <div class="line"></div>
+                <span></span>
+                <div class="line"></div>
+            </div>
+
+            <!-- ==========================================
+                 LOGIN FORM
+                 ========================================== -->
+            <div id="login-form">
+                <h1 class="auth-title">تسجيل الدخول</h1>
+                <p class="auth-desc">مرحبًا بك من جديد! سجل دخولك لاستكشاف آلاف الكتب</p>
+
+                <div class="form-group">
+                    <input type="email" id="login-email" class="form-input" placeholder="البريد الإلكتروني أو رقم الهاتف" required>
+                    <i class="fa-solid fa-envelope input-icon-right"></i>
+                </div>
+
+                <div class="form-group">
+                    <input type="password" id="login-password" class="form-input" placeholder="كلمة المرور" required>
+                    <i class="fa-solid fa-lock input-icon-right"></i>
+                    <button type="button" class="input-icon-left toggle-password" onclick="togglePassword('login-password', this)">
+                        <i class="fa-solid fa-eye"></i>
+                    </button>
+                </div>
+
+                <div class="flex justify-between items-center mb-5 mt-2">
+                    <label class="checkbox-container">
+                        <input type="checkbox" id="remember-me">
+                        <span>تذكرني</span>
+                    </label>
+                    <button class="link-btn" onclick="showForm('forgot')">نسيت كلمة المرور؟</button>
+                </div>
+
+                <button class="btn-primary" onclick="handleLogin()">
+                    تسجيل الدخول
+                </button>
+
+                <!-- Social Divider -->
+              <div class="social-divider">
+    <div class="line"></div>
+    <span>أو سجل دخولك عبر</span>
+    <div class="line"></div>
+</div>
+
+                <!-- Social Buttons -->
+                <div class="social-buttons">
+                    <button class="btn-social google" onclick="handleOAuth('google')">
+                        <i class="fa-brands fa-google"></i> Google
+                    </button>
+                    <button class="btn-social facebook" onclick="handleOAuth('facebook')">
+                        <i class="fa-brands fa-facebook"></i> Facebook
+                    </button>
+                </div>
+
+                <p class="text-center text-sm text-muted">
+                    ليس لديك حساب؟ 
+                    <button class="link-btn" onclick="showForm('signup')">إنشاء حساب جديد</button>
+                </p>
+            </div>
+
+            <!-- ==========================================
+                 SIGNUP FORM
+                 ========================================== -->
+            <div id="signup-form" style="display:none;">
+                <h1 class="auth-title">إنشاء حساب</h1>
+                <p class="auth-desc">انضم إلينا لاستكشاف آلاف الكتب</p>
+
+                <div class="form-group">
+                    <input type="text" id="signup-name" class="form-input" placeholder="الاسم بالكامل" required>
+                    <i class="fa-solid fa-user input-icon-right"></i>
+                </div>
+
+                <div class="form-group">
+                    <input type="email" id="signup-email" class="form-input" placeholder="البريد الإلكتروني" required>
+                    <i class="fa-solid fa-envelope input-icon-right"></i>
+                </div>
+
+                <div class="form-group">
+                    <input type="tel" id="signup-phone" class="form-input" placeholder="رقم الهاتف" required>
+                    <i class="fa-solid fa-phone input-icon-right"></i>
+                </div>
+
+                <div class="form-group">
+                    <select id="signup-year" class="form-input" style="appearance: none; padding-right: 16px;">
+                        <option value="1" style="color: #000;">السنة الأولى</option>
+                        <option value="2" style="color: #000;">السنة الثانية</option>
+                        <option value="3" style="color: #000;">السنة الثالثة</option>
+                        <option value="4" style="color: #000;">السنة الرابعة</option>
+                    </select>
+                    <i class="fa-solid fa-chevron-down input-icon-left" style="pointer-events: none;"></i>
+                </div>
+
+                <div class="form-group">
+                    <input type="password" id="signup-password" class="form-input" placeholder="كلمة المرور" required>
+                    <i class="fa-solid fa-lock input-icon-right"></i>
+                    <button type="button" class="input-icon-left toggle-password" onclick="togglePassword('signup-password', this)">
+                        <i class="fa-solid fa-eye"></i>
+                    </button>
+                </div>
+
+                <button class="btn-primary mb-4" onclick="handleSignup()">
+                    إنشاء الحساب
+                </button>
+
+                <p class="text-center text-sm text-muted">
+                    لديك حساب بالفعل؟ 
+                    <button class="link-btn" onclick="showForm('login')">تسجيل الدخول</button>
+                </p>
+            </div>
+
+            <!-- ==========================================
+                 FORGOT PASSWORD FORM (STEP 1)
+                 ========================================== -->
+            <div id="forgot-form" style="display:none;">
+                <h1 class="auth-title">نسيت كلمة المرور؟</h1>
+                <p class="auth-desc">أدخل بريدك الإلكتروني وسنرسل لك رمز التحقق</p>
+
+                <div class="form-group">
+                    <input type="email" id="forgot-email" class="form-input" placeholder="البريد الإلكتروني" required>
+                    <i class="fa-solid fa-envelope input-icon-right"></i>
+                </div>
+
+                <button class="btn-primary mb-4" onclick="handleSendOTP()">
+                    إرسال رمز التحقق
+                </button>
+
+                <p class="text-center text-sm text-muted">
+                    <button class="link-btn" onclick="showForm('login')">العودة لتسجيل الدخول</button>
+                </p>
+            </div>
+
+            <!-- ==========================================
+                 OTP FORM (STEP 2)
+                 ========================================== -->
+            <div id="otp-form" style="display:none;">
+                <h1 class="auth-title">رمز التحقق</h1>
+                <p class="auth-desc">تم إرسال رمز التحقق إلى: <br><strong id="target-email-display" class="text-gold"></strong></p>
+
+                <div class="form-group">
+                    <input type="text" id="otp-code" class="form-input text-center tracking-widest font-bold text-lg" placeholder="••••••" maxlength="6" required style="text-align: center; letter-spacing: 8px;">
+                    <i class="fa-solid fa-shield-alt input-icon-right"></i>
+                </div>
+
+                <button class="btn-primary mb-4" onclick="handleVerifyOTP()">
+                    تأكيد الرمز
+                </button>
+
+                <p class="text-center text-sm text-muted">
+                    <button class="link-btn" onclick="showForm('forgot')">تغيير البريد الإلكتروني</button>
+                </p>
+            </div>
+
+            <!-- ==========================================
+                 RESET PASSWORD FORM (STEP 3)
+                 ========================================== -->
+            <div id="reset-password-form" style="display:none;">
+                <div class="flex justify-end mb-2">
+                    <button type="button" onclick="skipPasswordReset()" class="link-btn text-muted flex items-center gap-1">
+                        <span>تخطي</span>
+                        <i class="fa-solid fa-arrow-left text-xs"></i>
+                    </button>
+                </div>
+
+                <h1 class="auth-title">كلمة المرور الجديدة</h1>
+                <p class="auth-desc">قم بتعيين كلمة مرور جديدة لحسابك</p>
+
+                <div class="form-group">
+                    <input type="password" id="new-password" class="form-input" placeholder="كلمة المرور الجديدة" required>
+                    <i class="fa-solid fa-lock input-icon-right"></i>
+                    <button type="button" class="input-icon-left toggle-password" onclick="togglePassword('new-password', this)">
+                        <i class="fa-solid fa-eye"></i>
+                    </button>
+                </div>
+
+                <div class="form-group">
+                    <input type="password" id="confirm-password" class="form-input" placeholder="تأكيد كلمة المرور" required>
+                    <i class="fa-solid fa-lock input-icon-right"></i>
+                    <button type="button" class="input-icon-left toggle-password" onclick="togglePassword('confirm-password', this)">
+                        <i class="fa-solid fa-eye"></i>
+                    </button>
+                </div>
+
+                <button class="btn-primary mb-4" onclick="handleUpdatePassword()">
+                    تحديث كلمة المرور والدخول
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // 1. SUPABASE INITIALIZATION
+        // ==========================================
+        const SUPABASE_URL = 'https://utkluvmpelinvlbjzpzx.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_QKM2narAhuKtmpRW15fKpg_7yxdsijC';
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let resetEmailStore = '';
+
+        // ==========================================
+        // 2. NAVIGATION & UI HELPERS
+        // ==========================================
+        function showForm(formType) {
+            document.getElementById('login-form').style.display = formType === 'login' ? 'block' : 'none';
+            document.getElementById('signup-form').style.display = formType === 'signup' ? 'block' : 'none';
+            document.getElementById('forgot-form').style.display = formType === 'forgot' ? 'block' : 'none';
+            document.getElementById('otp-form').style.display = formType === 'otp' ? 'block' : 'none';
+            document.getElementById('reset-password-form').style.display = formType === 'reset' ? 'block' : 'none';
+        }
+
+        function togglePassword(inputId, btn) {
+            const input = document.getElementById(inputId);
+            const icon = btn.querySelector('i');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.className = 'fa-solid fa-eye-slash';
+            } else {
+                input.type = 'password';
+                icon.className = 'fa-solid fa-eye';
+            }
+        }
+
+        // ==========================================
+        // 3. TOAST NOTIFICATION SYSTEM
+        // ==========================================
+        function showToast(message, type = 'success') {
+    const container = document.getElementById('toast-container');
+    
+    // مسح أي رسائل قديمة تماماً عشان مفيش حاجة تظهر وتختفي
+    container.innerHTML = '';
+    
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    
+    let iconClass = 'fa-check-circle';
+    if (type === 'error') iconClass = 'fa-exclamation-circle';
+    if (type === 'warning') iconClass = 'fa-exclamation-triangle';
+    if (type === 'info') iconClass = 'fa-info-circle';
+    
+    toast.innerHTML = `
+        <i class="fa-solid ${iconClass} toast-icon"></i>
+        <span class="toast-message">${message}</span>
+        <button class="toast-close"><i class="fa-solid fa-xmark"></i></button>
+    `;
+    
+    container.appendChild(toast);
+    setTimeout(() => toast.classList.add('show'), 10);
+    
+    // دالة الإغلاق
+    const closeToast = () => {
+        if (!toast.parentNode) return; // لو اتمسحت خلاص
+        toast.classList.remove('show');
+        toast.classList.add('hide');
+        setTimeout(() => {
+            if (toast.parentNode) toast.remove();
+        }, 400);
+    };
+    
+    // زر الإغلاق
+    toast.querySelector('.toast-close').addEventListener('click', (e) => {
+        e.stopPropagation(); // منع انتشار الحدث
+        closeToast();
+    });
+    
+    // الإغلاق التلقائي بعد 4 ثواني
+    setTimeout(closeToast, 4000);
+}
+        // ==========================================
+        // 4. SUPABASE AUTH FUNCTIONS
+        // ==========================================
+        
+        // --- Login ---
+        async function handleLogin() {
+            const email = document.getElementById('login-email').value.trim();
+            const password = document.getElementById('login-password').value.trim();
+
+            if (!email || !password) {
+                showToast('يرجى إدخال البريد الإلكتروني وكلمة المرور', 'error');
+                return;
+            }
+
+            const submitBtn = document.querySelector('#login-form .btn-primary');
+            const originalText = submitBtn.innerText;
+            submitBtn.innerText = 'جاري تسجيل الدخول...';
+            submitBtn.disabled = true;
+
+            try {
+                const { data, error } = await _supabase.auth.signInWithPassword({ email, password });
+                if (error) throw error;
+
+                if (data.user) {
+                    // Optional: Save user to custom table if needed
+                    showToast('تم تسجيل الدخول بنجاح');
+                    setTimeout(() => window.location.href = 'home.html', 1500);
+                }
+            } catch (err) {
+                showToast('خطأ في تسجيل الدخول: ' + err.message, 'error');
+            } finally {
+                submitBtn.innerText = originalText;
+                submitBtn.disabled = false;
+            }
+        }
+
+        // --- Signup ---
+        async function handleSignup() {
+            const email = document.getElementById('signup-email').value.trim();
+            const password = document.getElementById('signup-password').value.trim();
+            const fullName = document.getElementById('signup-name').value.trim();
+            const phone = document.getElementById('signup-phone').value.trim();
+            const year = document.getElementById('signup-year').value;
+
+            if (!email || !password || !fullName) {
+                showToast('برجاء ملء جميع الحقول المطلوبة', 'error');
+                return;
+            }
+
+            try {
+                const { data, error } = await _supabase.auth.signUp({
+                    email,
+                    password,
+                    options: {
+                        data: { full_name: fullName, phone: phone, academic_year: year }
+                    }
+                });
+
+                if (error) throw error;
+
+                if (data.user) {
+                    showToast('تم إنشاء الحساب بنجاح!', 'success');
+                    setTimeout(() => window.location.href = 'home.html', 1500);
+                }
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        // --- OAuth (Google & Facebook) ---
+    // ==========================================
+// GOOGLE ONE TAP & OAUTH HANDLER
+// ==========================================
+
+// دالة لمعالجة الـ ID Token الناتج من نافذة Google One Tap
+async function handleCredentialResponse(response) {
+    try {
+        const { data, error } = await _supabase.auth.signInWithIdToken({
+            provider: 'google',
+            token: response.credential,
+        });
+
+        if (error) throw error;
+
+        showToast('تم تسجيل الدخول بنجاح!', 'success');
+        setTimeout(() => window.location.href = 'home.html', 1000);
+    } catch (err) {
+        showToast('خطأ في تسجيل الدخول: ' + err.message, 'error');
+    }
+}
+
+// دالة زر تسجيل الدخول بواسطة جوجل
+function handleGoogleOneTap() {
+    // ⚠️ استبدل هُنا بـ Client ID الخاص بك من Google Cloud Console
+    const GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com';
+
+    if (typeof google !== 'undefined') {
+        google.accounts.id.initialize({
+            client_id: GOOGLE_CLIENT_ID,
+            callback: handleCredentialResponse,
+            auto_select: false,
+            cancel_on_tap_outside: true
+        });
+
+        // إظهار نافذة الاختيار فوق الموقع مباشرة (مثل صورة Claude)
+        google.accounts.id.prompt((notification) => {
+            if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+                // في حالة استبعاد النافذة أو كتمها من المتصفح، يتم التحويل للطريقة العادية
+                _supabase.auth.signInWithOAuth({
+                    provider: 'google',
+                    options: { redirectTo: window.location.origin + '/home.html' }
+                });
+            }
+        });
+    }
+}
+
+// تحديث دالة الـ OAuth الرئيسية
+async function handleOAuth(provider) {
+    if (provider === 'google') {
+        handleGoogleOneTap();
+    } else {
+        const baseUrl = window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, '/');
+        const { error } = await _supabase.auth.signInWithOAuth({
+            provider: provider,
+            options: { redirectTo: baseUrl + 'home.html' }
+        });
+        if (error) showToast(error.message, 'error');
+    }
+}
+        // --- Forgot Password (Send OTP) ---
+        async function handleSendOTP() {
+            const email = document.getElementById('forgot-email').value.trim();
+            if (!email) {
+                showToast('يرجى إدخال البريد الإلكتروني', 'error');
+                return;
+            }
+
+            resetEmailStore = email;
+
+            const { error } = await _supabase.auth.signInWithOtp({
+                email: email,
+                options: {
+                    emailRedirectTo: undefined,
+                    shouldCreateUser: false
+                }
+            });
+
+            if (error) {
+                showToast(error.message, 'error');
+            } else {
+                document.getElementById('target-email-display').innerText = email;
+                showToast('تم إرسال رمز التحقق المكون من 6 أرقام إلى بريدك الإلكتروني', 'success');
+                showForm('otp');
+            }
+        }
+
+        // --- Forgot Password (Verify OTP) ---
+        async function handleVerifyOTP() {
+            const token = document.getElementById('otp-code').value.trim();
+            if (!token) {
+                showToast('يرجى إدخال رمز التحقق', 'error');
+                return;
+            }
+
+            const { data, error } = await _supabase.auth.verifyOtp({
+                email: resetEmailStore,
+                token: token,
+                type: 'email'
+            });
+
+            if (error) {
+                showToast('رمز التحقق غير صحيح أو انتهت صلاحيته', 'error');
+            } else {
+                showToast('تم التأكد من الرمز بنجاح!', 'success');
+                showForm('reset');
+            }
+        }
+
+        // --- Forgot Password (Update Password) ---
+        async function handleUpdatePassword() {
+            const newPassword = document.getElementById('new-password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+
+            if (!newPassword || !confirmPassword) {
+                showToast('يرجى إدخال كلمة المرور وتأكيدها', 'error');
+                return;
+            }
+
+            if (newPassword !== confirmPassword) {
+                showToast('كلمتا المرور غير متطابقتين', 'error');
+                return;
+            }
+
+            const { error } = await _supabase.auth.updateUser({ password: newPassword });
+
+            if (error) {
+                showToast(error.message, 'error');
+            } else {
+                showToast('تم تغيير كلمة المرور بنجاح!', 'success');
+                setTimeout(() => window.location.href = 'home.html', 1500);
+            }
+        }
+
+        function skipPasswordReset() {
+            showToast('تم التخطي، مرحباً بك!', 'info');
+            setTimeout(() => window.location.href = 'home.html', 500);
+        }
+
+        // ==========================================
+        // 5. INITIALIZATION
+        // ==========================================
+        window.addEventListener('DOMContentLoaded', async () => {
+            // Check active session
+            const { data: { session } } = await _supabase.auth.getSession();
+            if (session && document.getElementById('reset-password-form').style.display !== 'block') {
+                window.location.href = 'home.html';
+            }
+        });
+    </script>
+</body>
+</html>
+
